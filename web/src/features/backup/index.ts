@@ -1,0 +1,66 @@
+import type { SyncStatus } from '../../types'
+import { uploadVault } from '../../services/github'
+import { encryptVault, hashVault } from '../crypto'
+import { setSetting, getSetting } from '../../storage/indexeddb'
+import { debounce } from '../../utils/debounce'
+
+let onStatusChange: ((status: SyncStatus) => void) | null = null
+let currentStatus: SyncStatus = 'inactive'
+export let lastError = ''
+
+export function setStatusCallback(cb: (status: SyncStatus) => void) {
+  onStatusChange = cb
+}
+
+function updateStatus(status: SyncStatus, errorMsg = '') {
+  currentStatus = status
+  lastError = errorMsg
+  onStatusChange?.(status)
+}
+
+export function getCurrentStatus(): SyncStatus {
+  return currentStatus
+}
+
+async function doBackup() {
+  const token = await getSetting<string>('githubToken')
+  if (!token) { console.log('backup: no token'); return }
+  try {
+    updateStatus('pending')
+    const vaultJson = localStorage.getItem('vaultlite_plain')
+    if (!vaultJson) { console.log('backup: no vaultJson'); return }
+    const hash = await hashVault(vaultJson)
+    const lastHash = await getSetting<string>('lastBackupHash')
+    if (hash === lastHash) {
+      updateStatus('synced')
+      return
+    }
+    const password = sessionStorage.getItem('vaultlite_master_password')
+    if (!password) throw new Error('No master password in session')
+    const encrypted = await encryptVault(vaultJson, password)
+    await uploadVault(token, encrypted, 'Auto backup via VaultLite')
+    await setSetting('lastBackupHash', hash)
+    updateStatus('synced')
+  } catch (e) {
+    console.error('backup failed:', e)
+    updateStatus('failed', (e as Error).message)
+  }
+}
+
+export const triggerBackup = debounce(doBackup, 30000)
+
+export async function syncNow() {
+  await doBackup()
+}
+
+export async function restoreFromGitHub(token: string, password: string): Promise<string> {
+  const { downloadVault } = await import('../../services/github')
+  try {
+    const encrypted = await downloadVault(token)
+    const { decryptVault } = await import('../crypto')
+    const plaintext = await decryptVault(encrypted, password)
+    return plaintext
+  } catch (err) {
+    throw new Error(`Restore failed: ${(err as Error).message}`)
+  }
+}
