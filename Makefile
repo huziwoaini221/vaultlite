@@ -10,7 +10,7 @@ dev: web
 build: cli web
 
 web:
-	cd web && npm ci && npm run build
+	cd web && npm install && npm run build
 	mkdir -p dist
 	rm -rf dist/web
 	cp -r web/dist dist/web

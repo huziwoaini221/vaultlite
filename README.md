@@ -25,7 +25,7 @@ npm run build
 Deploy to Cloudflare Pages:
 1. Push repo to GitHub
 2. On CF Pages dashboard, connect repo
-3. Build command: `cd web && npm ci && npm run build`
+3. Build command: `cd web && npm install && npm run build`
 4. Build output: `web/dist`
 
 ### CLI
