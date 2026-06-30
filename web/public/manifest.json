@@ -1,0 +1,12 @@
+{
+  "name": "VaultLite",
+  "short_name": "VaultLite",
+  "description": "Local-first password manager with encrypted vault, TOTP, and GitHub backup",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

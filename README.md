@@ -3,7 +3,7 @@
 A developer-focused, local-first password manager with encrypted vault (PBKDF2 + AES-256-GCM), TOTP authenticator, and optional GitHub backup.
 
 - **CLI** — Go single binary, no runtime deps
-- **Web** — Pure frontend (React + TypeScript), runs fully in browser
+- **Web** — Pure frontend (React + TypeScript), runs fully in browser, PWA-ready
 - **Encrypted** — PBKDF2 (SHA-256, 600k iterations) + AES-256-GCM
 - **TOTP** — RFC 6238 compliant, inline with passwords in unified view
 - **Backup** — Push/pull encrypted vault to GitHub, public or private repo
@@ -12,7 +12,7 @@ A developer-focused, local-first password manager with encrypted vault (PBKDF2 +
 
 ### Web
 
-Try it on Cloudflare Pages, or build locally:
+Try it on Cloudflare Pages, or build locally. PWA supported — add to home screen on Android/iOS:
 
 ```bash
 cd web
