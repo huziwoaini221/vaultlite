@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSetting, setSetting } from '../../storage/indexeddb'
 import { testToken, type GitHubUser } from '../../services/github'
-import { syncNow } from './index'
 
 export default function GitHubSettings({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {
   const [token, setToken] = useState('')
@@ -45,11 +44,7 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
     if (!u) { setSaving(false); return }
     await setSetting('githubToken', token.trim())
     setSavedToken(token.trim())
-    setMsg('Token saved! Triggering first backup...')
-    setTimeout(async () => {
-      await syncNow()
-      onConnected()
-    }, 500)
+    setMsg('Token saved.')
     setSaving(false)
   }
 

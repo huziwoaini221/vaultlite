@@ -29,6 +29,9 @@ async function doBackup() {
     updateStatus('pending')
     const vaultJson = localStorage.getItem('vaultlite_plain')
     if (!vaultJson) { console.log('backup: no vaultJson'); return }
+    let entries: unknown[] = []
+    try { entries = JSON.parse(vaultJson).entries || [] } catch {}
+    if (entries.length === 0) { console.log('backup: empty vault, skipping'); return }
     const hash = await hashVault(vaultJson)
     const lastHash = await getSetting<string>('lastBackupHash')
     if (hash === lastHash) {
