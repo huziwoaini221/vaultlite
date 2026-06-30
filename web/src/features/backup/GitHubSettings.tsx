@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSetting, setSetting } from '../../storage/indexeddb'
-import { testToken, type GitHubUser } from '../../services/github'
+import { testToken, setRepoPublic, type GitHubUser } from '../../services/github'
 
 export default function GitHubSettings({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {
   const [token, setToken] = useState('')
@@ -9,16 +9,34 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
   const [testing, setTesting] = useState(false)
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
+  const [publicRepo, setPublicRepo] = useState<boolean | null>(null)
+  const [makingPublic, setMakingPublic] = useState(false)
 
   useEffect(() => {
     getSetting<string>('githubToken').then(t => {
       if (t) {
         setSavedToken(t)
         setToken(t)
-        testToken(t).then(u => setUser(u)).catch(() => {})
+        testToken(t).then(u => {
+          setUser(u)
+          setSetting('githubOwner', u.login)
+          checkVisibility(t, u.login)
+        }).catch(() => {})
       }
     })
   }, [])
+
+  async function checkVisibility(tk: string, owner: string) {
+    try {
+      const resp = await fetch(`https://api.github.com/repos/${owner}/vaultlite-backup`, {
+        headers: { 'Authorization': `Bearer ${tk}`, 'Accept': 'application/vnd.github.v3+json' },
+      })
+      if (resp.ok) {
+        const data = await resp.json()
+        setPublicRepo(!data.private)
+      }
+    } catch {}
+  }
 
   async function handleTest(): Promise<GitHubUser | null> {
     if (!token.trim()) return null
@@ -28,6 +46,7 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
       const u = await testToken(token.trim())
       setUser(u)
       await setSetting('githubOwner', u.login)
+      checkVisibility(token.trim(), u.login)
       setMsg(`Connected as ${u.login}`)
       return u
     } catch (err) {
@@ -57,8 +76,24 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
     setToken('')
     setSavedToken('')
     setUser(null)
+    setPublicRepo(null)
     setMsg('GitHub disconnected.')
     onConnected()
+  }
+
+  async function handleMakePublic() {
+    if (!token.trim() || !user) return
+    setMakingPublic(true)
+    setMsg('')
+    try {
+      await setRepoPublic(token.trim())
+      setPublicRepo(true)
+      setMsg('Repo is now public. Restore without token is enabled.')
+    } catch (err) {
+      setMsg(`Failed to make repo public: ${(err as Error).message}`)
+    } finally {
+      setMakingPublic(false)
+    }
   }
 
   return (
@@ -70,7 +105,7 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
         </div>
 
         <div style={{ fontSize: 13, color: '#666', marginBottom: 16, lineHeight: 1.5 }}>
-          VaultLite automatically backs up your encrypted vault to a private GitHub repository.
+          VaultLite backs up your encrypted vault to a GitHub repository.
           Create a <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" style={{ color: '#3182ce' }}>Personal Access Token</a> with <code style={{ background: '#f0f0f0', padding: '1px 4px', borderRadius: 3 }}>repo</code> or <code style={{ background: '#f0f0f0', padding: '1px 4px', borderRadius: 3 }}>Contents: Read and write</code> scope.
         </div>
 
@@ -87,11 +122,22 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#f0fff4', borderRadius: 6, marginBottom: 8, fontSize: 13 }}>
             <span style={{ fontWeight: 600 }}>✓</span>
             <span>Connected as <strong>{user.login}</strong></span>
+            {publicRepo !== null && (
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: publicRepo ? '#38a169' : '#a0aec0' }}>
+                {publicRepo ? '● Public' : '● Private'}
+              </span>
+            )}
           </div>
         )}
 
+        {publicRepo === false && (
+          <button onClick={handleMakePublic} disabled={makingPublic} style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #38a169', background: '#f0fff4', color: '#276749', cursor: 'pointer', fontSize: 13, marginBottom: 8 }}>
+            {makingPublic ? 'Making public...' : 'Make repo public (no token needed for Restore)'}
+          </button>
+        )}
+
         {msg && (
-          <div style={{ padding: '8px 12px', borderRadius: 6, marginBottom: 8, fontSize: 13, background: msg.includes('invalid') || msg.includes('fail') ? '#fff5f5' : '#f0fff4', color: msg.includes('invalid') || msg.includes('fail') ? '#c53030' : '#276749' }}>
+          <div style={{ padding: '8px 12px', borderRadius: 6, marginBottom: 8, fontSize: 13, background: msg.includes('invalid') || msg.includes('fail') || msg.includes('Error') ? '#fff5f5' : '#f0fff4', color: msg.includes('invalid') || msg.includes('fail') || msg.includes('Error') ? '#c53030' : '#276749' }}>
             {msg}
           </div>
         )}
@@ -106,7 +152,7 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
             </button>
           ) : (
             <button onClick={handleSave} disabled={!token.trim() || saving} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: !token.trim() || saving ? '#ccc' : '#1a1a2e', color: '#fff', cursor: 'pointer', fontSize: 14 }}>
-              {saving ? 'Saving...' : 'Save & Backup'}
+              {saving ? 'Saving...' : 'Save'}
             </button>
           )}
         </div>
