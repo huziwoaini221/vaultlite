@@ -6,15 +6,14 @@ A developer-focused, local-first password manager with encrypted vault (PBKDF2 +
 - **Web** — Pure frontend (React + TypeScript), runs fully in browser
 - **Encrypted** — PBKDF2 (SHA-256, 600k iterations) + AES-256-GCM
 - **TOTP** — RFC 6238 compliant, inline with passwords in unified view
-- **Backup** — Push/pull encrypted vault to private GitHub repo
+- **Backup** — Push/pull encrypted vault to GitHub, public or private repo
 
 ## Quick Start
 
 ### Web
 
-Open in browser — no install needed.
+Try it on Cloudflare Pages, or build locally:
 
-Build locally:
 ```bash
 cd web
 npm install
@@ -30,7 +29,7 @@ Deploy to Cloudflare Pages:
 
 ### CLI
 
-Download the latest binary from [Releases](https://github.com/USER/vaultlite/releases) for your platform:
+Download the latest binary from [Releases](https://github.com/huziwoaini221/vaultlite/releases) for your platform:
 
 ```bash
 # Linux / macOS
@@ -60,18 +59,55 @@ vault list
 vault config set github-token <your_pat>
 vault sync
 
-# Restore from GitHub
-vault pull
+# Restore from public repo (no token needed)
+vault pull huziwoaini221
 ```
+
+### Cross-device restore
+
+**First device** — configure GitHub backup once:
+1. Enter token in GitHub Settings → **Make repo public**
+2. Sync — token is stored inside the encrypted vault
+
+**New device** — restore without token:
+1. Web: On Welcome page, choose **Restore from GitHub**, enter master password + GitHub username
+2. CLI: `vault pull <your-github-username>`, enter master password
+
+Token from vault is extracted and saved automatically. Subsequent Syncs work without re-entering the token.
 
 ## Features
 
-- **Password management** — Add, edit, delete, search entries (title, username, URL, tags)
-- **TOTP authenticator** — 6-digit code with countdown ring, inline per entry
-- **Password generator** — Configurable length, character sets, exclude ambiguous
-- **Strength checker** — Score, entropy, level feedback
-- **GitHub backup** — Automatic push on changes, debounced 30s, private repo
-- **Import/Export** — `.enc` vault files, Bitwarden CSV
+### Password management
+- Add, edit, delete, search entries by title, username, URL, or tags
+- Unified view — passwords and TOTP codes inline per entry
+- Fields: title, username, password (always masked), URL, note, tags, TOTP secret
+
+### TOTP authenticator
+- RFC 6238 compliant (HMAC-SHA1, 30-second time step)
+- 6-digit codes with visual countdown ring
+- Base32 secret input, displayed inline per entry
+
+### Password generator
+- Configurable length (1–128 characters)
+- Character set toggles: uppercase, lowercase, digits, symbols
+- Exclude ambiguous characters (0, O, I, l, 1, etc.)
+- One-click copy
+
+### Strength checker
+- Real-time scoring: score, entropy (bits), level label
+- Visual feedback while typing
+
+### GitHub backup
+- Push vault to public or private repo
+- Automatic on vault changes (debounced 30s)
+- Manual Sync button for immediate backup
+- Restore from latest commit or auto-fallback to previous commit
+- Token stored inside encrypted vault for cross-device restore
+
+### Import / Export
+- Export vault as `.enc` file (encrypted, portable)
+- Import from `.enc` file
+- Import from Bitwarden CSV
 
 ## Security
 
@@ -86,20 +122,17 @@ vault pull
 ```bash
 # Install dependencies
 git clone <repo-url>
-cd vaultlite
-make web    # web/dist/ — deploy to CF Pages
-make cli    # dist/vault — single binary
+
+# Web only (output: web/dist/)
+make web
+
+# CLI only (output: dist/vault)
+make cli
 
 # All targets
 make build
 
-# CLI only
-make cli
-
-# Web only
-make web
-
-# Cross-compile CLI releases
+# Cross-compile CLI for all platforms
 make cli-release
 ```
 
