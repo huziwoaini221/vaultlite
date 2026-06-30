@@ -33,7 +33,9 @@ export default function Vault() {
     setEntries(entries)
     const pw = sessionStorage.getItem('vaultlite_master_password')
     if (!pw) return
-    const vault = { entries }
+    const token = await getSetting<string>('githubToken')
+    const vault: Record<string, unknown> = { entries }
+    if (token) vault.githubToken = token
     const plain = JSON.stringify(vault)
     localStorage.setItem('vaultlite_plain', plain)
     const encrypted = localStorage.getItem('vaultlite_encrypted')
@@ -61,7 +63,9 @@ export default function Vault() {
   async function persistVault(newEntries: VaultEntry[]) {
     const pw = sessionStorage.getItem('vaultlite_master_password')
     if (!pw) return
-    const vault = { entries: newEntries }
+    const token = await getSetting<string>('githubToken')
+    const vault: Record<string, unknown> = { entries: newEntries }
+    if (token) vault.githubToken = token
     const plain = JSON.stringify(vault)
     localStorage.setItem('vaultlite_plain', plain)
     const encrypted = await encryptVault(plain, pw)
@@ -186,13 +190,16 @@ export default function Vault() {
       const data = JSON.parse(plain)
       if (!data.entries || !Array.isArray(data.entries)) throw new Error('Invalid vault data')
       await replaceAllEntries(data.entries)
-      const vault = { entries: data.entries }
+      const vault: Record<string, unknown> = { entries: data.entries }
+      if (data.githubToken) vault.githubToken = data.githubToken
       const newPlain = JSON.stringify(vault)
       localStorage.setItem('vaultlite_plain', newPlain)
       const encrypted = await encryptVault(newPlain, pw)
       localStorage.setItem('vaultlite_encrypted', encrypted)
       setEntries(data.entries)
-      setSyncMsg(`Restored ${data.entries.length} entries from GitHub backup`)
+      let msg = `Restored ${data.entries.length} entries from GitHub backup`
+      if (data.githubToken) msg += ' (GitHub token restored)'
+      setSyncMsg(msg)
     } catch (err) {
       setSyncMsg(`Restore failed: ${(err as Error).message}`)
     } finally {
