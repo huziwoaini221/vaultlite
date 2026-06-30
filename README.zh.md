@@ -141,4 +141,6 @@ MIT
 
 ## 反馈
 
-[提交 Issue](https://github.com/huziwoaini221/vaultlite/issues)
+- [提交 Issue](https://github.com/huziwoaini221/vaultlite/issues)
+- 邮箱: sailnowhealth@outlook.com
+- Telegram 群: [t.me/+oHG72-4yjqM0MTBl](https://t.me/+oHG72-4yjqM0MTBl)

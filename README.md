@@ -1,4 +1,4 @@
-# VaultLite
+# VaultLite <a href="./README.zh.md"><img src="https://img.shields.io/badge/README-中文-blue" alt="中文"></a>
 
 A developer-focused, local-first password manager with encrypted vault (PBKDF2 + AES-256-GCM), TOTP authenticator, and optional GitHub backup.
 
@@ -142,4 +142,6 @@ MIT
 
 ## Feedback
 
-[Open an issue](https://github.com/huziwoaini221/vaultlite/issues)
+- [Open an issue](https://github.com/huziwoaini221/vaultlite/issues)
+- Email: sailnowhealth@outlook.com
+- Telegram: [t.me/+oHG72-4yjqM0MTBl](https://t.me/+oHG72-4yjqM0MTBl)
