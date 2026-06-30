@@ -139,3 +139,7 @@ make cli-release
 ## License
 
 MIT
+
+## Feedback
+
+[Open an issue](https://github.com/huziwoaini221/vaultlite/issues)
