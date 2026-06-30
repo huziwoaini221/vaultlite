@@ -27,6 +27,7 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
     try {
       const u = await testToken(token.trim())
       setUser(u)
+      await setSetting('githubOwner', u.login)
       setMsg(`Connected as ${u.login}`)
       return u
     } catch (err) {
@@ -43,6 +44,7 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
     const u = await handleTest()
     if (!u) { setSaving(false); return }
     await setSetting('githubToken', token.trim())
+    await setSetting('githubOwner', u.login)
     setSavedToken(token.trim())
     setMsg('Token saved.')
     setSaving(false)
@@ -50,6 +52,7 @@ export default function GitHubSettings({ onClose, onConnected }: { onClose: () =
 
   async function handleRemove() {
     await setSetting('githubToken', '')
+    await setSetting('githubOwner', '')
     await setSetting('lastBackupHash', '')
     setToken('')
     setSavedToken('')

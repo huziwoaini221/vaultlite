@@ -56,30 +56,58 @@ export async function syncNow() {
   await doBackup()
 }
 
-export async function restoreFromGitHub(token: string, password: string): Promise<string> {
-  const { downloadVault, downloadVaultAtRef, getVaultCommits } = await import('../../services/github')
+export async function restoreFromGitHub(tokenOrOwner: string, password: string): Promise<string> {
+  const isToken = tokenOrOwner.startsWith('ghp_') || tokenOrOwner.startsWith('github_pat_')
   const { setSetting } = await import('../../storage/indexeddb')
   try {
-    const encrypted = await downloadVault(token)
-    const { decryptVault } = await import('../crypto')
-    const plaintext = await decryptVault(encrypted, password)
-    const data = JSON.parse(plaintext)
-    if (data.githubToken && data.githubToken !== token) {
-      await setSetting('githubToken', data.githubToken)
-    }
-    if (data.entries && data.entries.length === 0) {
-      const commits = await getVaultCommits(token)
-      if (commits.length > 1) {
-        const prevEncrypted = await downloadVaultAtRef(token, commits[1])
-        const prevPlain = await decryptVault(prevEncrypted, password)
-        const prevData = JSON.parse(prevPlain)
-        if (prevData.githubToken) {
-          await setSetting('githubToken', prevData.githubToken)
-        }
-        return prevPlain
+    let encrypted: string
+    let data: { entries?: unknown[]; githubToken?: string }
+    if (isToken) {
+      const { downloadVault, downloadVaultAtRef, getVaultCommits } = await import('../../services/github')
+      encrypted = await downloadVault(tokenOrOwner)
+      const { decryptVault } = await import('../crypto')
+      const plaintext = await decryptVault(encrypted, password)
+      data = JSON.parse(plaintext)
+      if (data.githubToken && data.githubToken !== tokenOrOwner) {
+        await setSetting('githubToken', data.githubToken)
       }
+      if (data.entries && data.entries.length === 0) {
+        const commits = await getVaultCommits(tokenOrOwner)
+        if (commits.length > 1) {
+          const prevEncrypted = await downloadVaultAtRef(tokenOrOwner, commits[1])
+          const prevPlain = await decryptVault(prevEncrypted, password)
+          const prevData = JSON.parse(prevPlain)
+          if (prevData.githubToken) {
+            await setSetting('githubToken', prevData.githubToken)
+          }
+          return prevPlain
+        }
+      }
+      return plaintext
+    } else {
+      const { downloadVaultPublic, downloadVaultAtRefPublic, getVaultCommitsPublic } = await import('../../services/github')
+      encrypted = await downloadVaultPublic(tokenOrOwner)
+      const { decryptVault } = await import('../crypto')
+      const plaintext = await decryptVault(encrypted, password)
+      data = JSON.parse(plaintext)
+      await setSetting('githubOwner', tokenOrOwner)
+      if (data.githubToken) {
+        await setSetting('githubToken', data.githubToken)
+      }
+      if (data.entries && data.entries.length === 0) {
+        const commits = await getVaultCommitsPublic(tokenOrOwner)
+        if (commits.length > 1) {
+          const prevEncrypted = await downloadVaultAtRefPublic(tokenOrOwner, commits[1])
+          const prevPlain = await decryptVault(prevEncrypted, password)
+          const prevData = JSON.parse(prevPlain)
+          if (prevData.githubToken) {
+            await setSetting('githubToken', prevData.githubToken)
+          }
+          return prevPlain
+        }
+      }
+      return plaintext
     }
-    return plaintext
   } catch (err) {
     throw new Error(`Restore failed: ${(err as Error).message}`)
   }

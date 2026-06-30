@@ -183,10 +183,20 @@ export default function Vault() {
     setSyncMsg('')
     try {
       const token = await getSetting<string>('githubToken')
-      if (!token) { setSyncMsg('No GitHub token configured'); return }
+      const owner = await getSetting<string>('githubOwner')
       const pw = sessionStorage.getItem('vaultlite_master_password')
       if (!pw) { setSyncMsg('Not authenticated'); return }
-      const plain = await restoreFromGitHub(token, pw)
+      let cred = token
+      if (!cred) {
+        if (owner) {
+          cred = owner
+        } else {
+          const input = prompt('Enter your GitHub username (e.g. huziwoaini221):')
+          if (!input) { setRestoring(false); return }
+          cred = input.trim()
+        }
+      }
+      const plain = await restoreFromGitHub(cred, pw)
       const data = JSON.parse(plain)
       if (!data.entries || !Array.isArray(data.entries)) throw new Error('Invalid vault data')
       await replaceAllEntries(data.entries)

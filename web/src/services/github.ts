@@ -85,6 +85,45 @@ export async function downloadVault(token: string): Promise<string> {
   return decodeURIComponent(escape(atob(data.content)))
 }
 
+export async function downloadVaultPublic(owner: string): Promise<string> {
+  const resp = await fetch(`${GITHUB_API}/repos/${owner}/${REPO_NAME}/contents/vault.enc`, {
+    headers: { 'Accept': 'application/vnd.github.v3+json' },
+  })
+  if (resp.status === 404) throw new Error('No vault.enc found. Make sure vaultlite-backup is public.')
+  if (!resp.ok) throw new Error(`GitHub API error: ${resp.status}`)
+  const data = await resp.json()
+  return decodeURIComponent(escape(atob(data.content)))
+}
+
+export async function getVaultCommitsPublic(owner: string): Promise<string[]> {
+  const resp = await fetch(`${GITHUB_API}/repos/${owner}/${REPO_NAME}/commits?path=vault.enc&per_page=5`, {
+    headers: { 'Accept': 'application/vnd.github.v3+json' },
+  })
+  if (!resp.ok) return []
+  const commits = await resp.json()
+  return commits.map((c: { sha: string }) => c.sha)
+}
+
+export async function downloadVaultAtRefPublic(owner: string, ref: string): Promise<string> {
+  const resp = await fetch(`${GITHUB_API}/repos/${owner}/${REPO_NAME}/contents/vault.enc?ref=${ref}`, {
+    headers: { 'Accept': 'application/vnd.github.v3+json' },
+  })
+  if (resp.status === 404) throw new Error('No vault.enc found at that ref')
+  if (!resp.ok) throw new Error(`GitHub API error: ${resp.status}`)
+  const data = await resp.json()
+  return decodeURIComponent(escape(atob(data.content)))
+}
+
+export async function setRepoPublic(token: string): Promise<void> {
+  const user = await getAuthenticatedUser(token)
+  const owner = user.login
+  const resp = await githubFetch(token, `/repos/${owner}/${REPO_NAME}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ private: false }),
+  })
+  if (!resp.ok) throw new Error('Failed to make repo public')
+}
+
 export async function testToken(token: string): Promise<GitHubUser> {
   return getAuthenticatedUser(token)
 }
