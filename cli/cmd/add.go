@@ -73,6 +73,11 @@ func runAdd(args []string) error {
 		}
 	}
 
+	totpStr, _ := readLine("TOTP secret (base32): ")
+	if totpStr != "" {
+		entry.TOTPSecret = totpStr
+	}
+
 	v.AddEntry(entry)
 	if err := v.Save(); err != nil {
 		return fmt.Errorf("failed to save vault: %w", err)
