@@ -17,16 +17,16 @@ web:
 
 cli:
 	mkdir -p dist
-	$(GOBUILD) -o dist/vault ./cli
+	cd cli && $(GOBUILD) -o ../dist/vault .
 
 cli-release:
 	rm -rf $(RELEASE_DIR)
 	mkdir -p $(RELEASE_DIR)
-	GOOS=linux   GOARCH=amd64 $(GOBUILD) -o $(RELEASE_DIR)/vault-linux-amd64   ./cli
-	GOOS=linux   GOARCH=arm64 $(GOBUILD) -o $(RELEASE_DIR)/vault-linux-arm64   ./cli
-	GOOS=darwin  GOARCH=amd64 $(GOBUILD) -o $(RELEASE_DIR)/vault-darwin-amd64  ./cli
-	GOOS=darwin  GOARCH=arm64 $(GOBUILD) -o $(RELEASE_DIR)/vault-darwin-arm64  ./cli
-	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(RELEASE_DIR)/vault-windows-amd64.exe ./cli
+	cd cli && GOOS=linux   GOARCH=amd64 $(GOBUILD) -o ../$(RELEASE_DIR)/vault-linux-amd64   .
+	cd cli && GOOS=linux   GOARCH=arm64 $(GOBUILD) -o ../$(RELEASE_DIR)/vault-linux-arm64   .
+	cd cli && GOOS=darwin  GOARCH=amd64 $(GOBUILD) -o ../$(RELEASE_DIR)/vault-darwin-amd64  .
+	cd cli && GOOS=darwin  GOARCH=arm64 $(GOBUILD) -o ../$(RELEASE_DIR)/vault-darwin-arm64  .
+	cd cli && GOOS=windows GOARCH=amd64 $(GOBUILD) -o ../$(RELEASE_DIR)/vault-windows-amd64.exe .
 
 clean:
 	rm -rf dist/ web/dist $(RELEASE_DIR)
