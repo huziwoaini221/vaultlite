@@ -88,3 +88,19 @@ export async function downloadVault(token: string): Promise<string> {
 export async function testToken(token: string): Promise<GitHubUser> {
   return getAuthenticatedUser(token)
 }
+
+export async function getVaultCommits(token: string): Promise<string[]> {
+  const owner = await ensureRepo(token)
+  const resp = await githubFetch(token, `/repos/${owner}/${REPO_NAME}/commits?path=vault.enc&per_page=5`)
+  if (!resp.ok) return []
+  const commits = await resp.json()
+  return commits.map((c: { sha: string }) => c.sha)
+}
+
+export async function downloadVaultAtRef(token: string, ref: string): Promise<string> {
+  const owner = await ensureRepo(token)
+  const getResp = await githubFetch(token, `/repos/${owner}/${REPO_NAME}/contents/vault.enc?ref=${ref}`)
+  if (getResp.status === 404) throw new Error('No vault.enc found at that ref')
+  const data = await getResp.json()
+  return decodeURIComponent(escape(atob(data.content)))
+}

@@ -57,11 +57,20 @@ export async function syncNow() {
 }
 
 export async function restoreFromGitHub(token: string, password: string): Promise<string> {
-  const { downloadVault } = await import('../../services/github')
+  const { downloadVault, downloadVaultAtRef, getVaultCommits } = await import('../../services/github')
   try {
     const encrypted = await downloadVault(token)
     const { decryptVault } = await import('../crypto')
     const plaintext = await decryptVault(encrypted, password)
+    const data = JSON.parse(plaintext)
+    if (data.entries && data.entries.length === 0) {
+      const commits = await getVaultCommits(token)
+      if (commits.length > 1) {
+        const prevEncrypted = await downloadVaultAtRef(token, commits[1])
+        const prevPlain = await decryptVault(prevEncrypted, password)
+        return prevPlain
+      }
+    }
     return plaintext
   } catch (err) {
     throw new Error(`Restore failed: ${(err as Error).message}`)
