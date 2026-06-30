@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	GitHubToken string `json:"github_token,omitempty"`
+	GitHubOwner string `json:"github_owner,omitempty"`
 	GitHubRepo  string `json:"github_repo,omitempty"`
 	AutoBackup  bool   `json:"auto_backup"`
 }

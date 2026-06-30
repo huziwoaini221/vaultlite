@@ -108,6 +108,53 @@ func DownloadVault(token string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(cr.Content)
 }
 
+func DownloadVaultPublic(owner string) ([]byte, error) {
+	url := fmt.Sprintf("%s/repos/%s/vaultlite-backup/contents/vault.enc", baseURL, owner)
+	resp, err := http.DefaultClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == 404 {
+		return nil, fmt.Errorf("no vault.enc found (make sure vaultlite-backup is public)")
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("failed to download vault: %s", resp.Status)
+	}
+	var cr contentResponse
+	if err := json.NewDecoder(resp.Body).Decode(&cr); err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(cr.Content)
+}
+
+func SetRepoPublic(token string) error {
+	owner, repo, err := getRepoInfo(token)
+	if err != nil {
+		return err
+	}
+	body := map[string]bool{"private": false}
+	b, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("PATCH", fmt.Sprintf("%s/repos/%s/%s", baseURL, owner, repo), bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("failed to make repo public: %s", resp.Status)
+	}
+	return nil
+}
+
 func getRepoInfo(token string) (string, string, error) {
 	req, err := http.NewRequest("GET", baseURL+"/user", nil)
 	if err != nil {

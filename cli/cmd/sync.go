@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/guoyan/vaultlite/cli/crypto"
 	"github.com/guoyan/vaultlite/cli/github"
 	"github.com/guoyan/vaultlite/cli/internal/config"
 	"github.com/guoyan/vaultlite/cli/internal/vault"
@@ -41,17 +43,45 @@ func runSync(args []string) error {
 		return fmt.Errorf("failed to load vault (wrong password?): %w", err)
 	}
 
-	encryptedContent, err := os.ReadFile(vaultPath)
+	existing, err := os.ReadFile(vaultPath)
+	if err != nil {
+		return err
+	}
+
+	plaintext, err := crypto.Decrypt(existing, password)
+	if err != nil {
+		return err
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal(plaintext, &data); err != nil {
+		return err
+	}
+	if data == nil {
+		data = make(map[string]interface{})
+	}
+	data["githubToken"] = cfg.GitHubToken
+
+	updated, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	encrypted, err := crypto.Encrypt(updated, password)
 	if err != nil {
 		return err
 	}
 
 	fmt.Print("Syncing to GitHub... ")
-	if err := github.UploadVault(cfg.GitHubToken, encryptedContent, "VaultLite backup"); err != nil {
+	if err := github.UploadVault(cfg.GitHubToken, encrypted, "VaultLite backup"); err != nil {
 		fmt.Println("failed")
 		return fmt.Errorf("sync failed: %w", err)
 	}
-	fmt.Println("done")
 
+	if err := os.WriteFile(vaultPath, encrypted, 0600); err != nil {
+		return fmt.Errorf("failed to update local vault: %w", err)
+	}
+
+	fmt.Println("done")
 	return nil
 }
