@@ -7,6 +7,7 @@ import PasswordChecker from '../features/checker/PasswordChecker'
 import PasswordGenerator from '../features/generator/PasswordGenerator'
 import TOTPDisplay from '../features/totp/TOTPDisplay'
 import GitHubSettings from '../features/backup/GitHubSettings'
+import QRScanner from '../components/QRScanner'
 
 function generateId(): string {
   return crypto.randomUUID()
@@ -350,6 +351,7 @@ function EntryForm({ initial, onSave, onCancel }: EntryFormProps) {
   const [tags, setTags] = useState(initial?.tags.join(', ') || '')
   const [totpSecret, setTotpSecret] = useState(initial?.totpSecret || '')
   const [saving, setSaving] = useState(false)
+  const [showQR, setShowQR] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -367,6 +369,17 @@ function EntryForm({ initial, onSave, onCancel }: EntryFormProps) {
     setSaving(false)
   }
 
+  function handleQRResult(secret: string, label?: string, issuer?: string) {
+    setTotpSecret(secret)
+    if (label && !title) {
+      const cleanLabel = label.replace(/^[^:]+:\s*/, '')
+      setTitle(cleanLabel)
+    } else if (issuer && !title) {
+      setTitle(issuer)
+    }
+    setShowQR(false)
+  }
+
   return (
     <form onSubmit={handleSubmit} style={{ marginBottom: 16, padding: 16, border: '1px solid #ddd', borderRadius: 8, background: '#fafafa' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -380,7 +393,10 @@ function EntryForm({ initial, onSave, onCancel }: EntryFormProps) {
       <textarea placeholder="Note" value={note} onChange={e => setNote(e.target.value)} style={{ ...inputStyle, marginTop: 12, minHeight: 60, resize: 'vertical' }} />
 
       <div style={{ marginTop: 12, borderTop: '1px solid #e2e8f0', paddingTop: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#666', marginBottom: 4 }}>Two-factor authentication (TOTP)</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#666', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Two-factor authentication (TOTP)</span>
+          <button type="button" onClick={() => setShowQR(true)} style={{ padding: '4px 10px', borderRadius: 4, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: 12 }}>Scan QR</button>
+        </div>
         <input placeholder="TOTP Secret (base32)" value={totpSecret} onChange={e => setTotpSecret(e.target.value)} style={inputStyle} />
         {totpSecret && (
           <div style={{ marginTop: 4 }}>
@@ -388,6 +404,8 @@ function EntryForm({ initial, onSave, onCancel }: EntryFormProps) {
           </div>
         )}
       </div>
+
+      {showQR && <QRScanner onResult={handleQRResult} onClose={() => setShowQR(false)} />}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         <button type="submit" disabled={saving} style={{ padding: '8px 20px', borderRadius: 6, border: 'none', background: '#1a1a2e', color: '#fff', cursor: 'pointer' }}>
